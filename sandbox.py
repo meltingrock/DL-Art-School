@@ -4,12 +4,15 @@ from PIL import Image
 from pytorch_wavelets import DWTForward, DWTInverse
 import torch.nn.functional as F
 
+
 def load_img(path):
     im = Image.open(path).convert(mode="RGB")
     return torchvision.transforms.ToTensor()(im)
 
+
 def save_img(t, path):
     torchvision.utils.save_image(t, path)
+
 
 img = load_img("pu.jpg")
 img = img.unsqueeze(0)

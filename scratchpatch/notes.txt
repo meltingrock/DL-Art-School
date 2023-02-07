@@ -1,0 +1,23 @@
+# Installing DALS
+
+# 1.  Create venv with python3.8
+cd <code root for project>
+virtualenv venv --python=python3.8
+
+# 2. Chan ge into venv and install requirements.txt
+pip3 install -r code/requirements.txt
+
+# 2. Pytorch and Cuda install -https://www.geeksforgeeks.org/install-pytorch-on-linux/
+pip3 install torch torchvision torchaudio
+
+# Install mp3 loader - https://github.com/neonbjb/pyfastmp3decoder
+pip install cython
+git clone https://github.com/neonbjb/pyfastmp3decoder.git
+cd pyfastmp3decoder
+git submodule update --init --recursive
+python setup.py install
+
+# Install pytorch_wavelets - https://pytorch-wavelets.readthedocs.io/en/latest/readme.html
+git clone https://github.com/fbcotter/pytorch_wavelets
+cd pytorch_wavelets
+pip install .

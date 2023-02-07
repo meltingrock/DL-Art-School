@@ -1,0 +1,119 @@
+model: extensibletrainer
+scale: 1
+gpu_ids: [0] #gpu_ids: [0,1,2,3,4,5,6,7]
+start_step: -1
+checkpointing_enabled: false  # <-- Gradient checkpointing. Enable for huge GPU memory savings. Disable for distributed training.
+fp16: false
+wandb: false  # <-- enable to log to wandb. tensorboard logging is always enabled.
+use_tb_logger: true
+
+
+datasets:
+ train:
+    name: wenet_train
+    n_workers: 1 # n_workers: 8
+    batch_size: 8192
+    mode: preprocessed_mel
+    path: /data/wenet_data/shards
+    cache_path: /data/wenet_data/shards/cache_path.pth
+    should_squeeze: True
+    num_mels: 80
+    n_fft: 1024
+    hop_size: 256
+    win_size: 1024
+    fmin: 0
+    fmax: 8000
+ val:
+    name: wenet_val
+    n_workers: 1 # n_workers: 8
+    batch_size: 128
+    mode: preprocessed_mel
+    path: /data/wenet_data/shards/dev
+    cache_path: /data/wenet_data/shards/dev/cache_path.pth
+    should_squeeze: True
+    num_mels: 80
+    n_fft: 1024
+    hop_size: 256
+    win_size: 1024
+    fmin: 0
+    fmax: 8000
+
+networks:
+  generator:
+    type: generator
+    which_model_G: lucidrains_dvae
+    kwargs:
+      positional_dims: 1
+      num_tokens: 8192
+      codebook_dim: 256
+      num_layers: 2
+      num_resnet_blocks: 3
+      hidden_dim: 512
+      channels: 80
+      kernel_size: 3
+      use_transposed_convs: false
+
+path:
+  #pretrain_model_generator: <insert pretrained model path if desired>
+  strict_load: true
+  #resume_state: ../experiments/train_imgnet_vqvae_stage1/training_state/0.state   # <-- Set this to resume from a previous training state.
+
+steps:
+  generator:
+    training: generator
+    optimizer_params:
+      lr: !!float 3e-4
+      weight_decay: 0.01
+    injectors:
+      # Cool hack for more training diversity:
+      # Make sure to change below references to `hq` to `cropped`.
+      random_crop:
+        train: true
+        type: random_crop
+        dim_in: 224
+        dim_out: 192
+        in: hq
+        out: cropped
+      gen_inj_train:
+        train: true
+        type: generator
+        generator: generator
+        in: mel
+        out: [recon, codebook_commitment_loss, gen]
+    losses:
+      recon_loss:
+        type: pix
+        criterion: l2
+        weight: 1
+        fake: gen
+        real: mel
+      commitment_loss:
+        type: direct
+        weight: .25
+        key: codebook_commitment_loss
+
+train:
+  niter: 50000000
+  warmup_iter: -1
+  mega_batch_factor: 8    # <-- Gradient accumulation factor. If you are running OOM, increase this to [2,4,8].
+  val_freq: 4000
+
+  default_lr_scheme: MultiStepLR
+  gen_lr_steps: [50000, 100000, 140000, 180000]
+  lr_gamma: 0.5
+
+eval:
+  output_state: gen
+  injectors:
+    gen_inj_eval:
+      type: generator
+      generator: generator
+      in: hq
+      out: [gen, codebook_commitment_loss]
+
+logger:
+  print_freq: 100
+  save_checkpoint_freq: 1000
+  visuals: [gen, mel]
+  visual_debug_rate: 1000
+  is_mel_spectrogram: true

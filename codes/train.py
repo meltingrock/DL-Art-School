@@ -367,4 +367,6 @@ if __name__ == '__main__':
         torch.cuda.set_device(torch.distributed.get_rank())
 
     trainer.init(args.opt, opt, args.launcher)
-    trainer.do_training()
+
+    # Riaan disabled below to test rest of file
+    #trainer.do_training()

@@ -3,8 +3,6 @@ numpy
 pyyaml
 tb-nightly
 future
-scp
-tqdm
 matplotlib
 scipy
 munch
@@ -46,3 +44,7 @@ axial_positional_embedding
 g-mlp-pytorch
 x-clip
 x_transformers
+
+# Riaan added
+torch
+PyWavelets
